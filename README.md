@@ -26,6 +26,18 @@ que ves son los del aparato, no los del navegador.
 Tres reconstrucciones rivales seleccionables —Freeth 2021, Jones · Wright, Voulgaris 2026— que
 cambian los periodos planetarios, la forma de presentarlos y cuántos engranes hay que suponer.
 
+**Se maneja arrastrando sobre la propia máquina**, que es como se usaba el original: se agarra y se
+gira. Con ratón el giro es circular y una vuelta completa del cursor equivale a una vuelta de
+manivela, es decir 78.6 días. Con el dedo el gesto es horizontal, para no pelearse con el
+desplazamiento de la página. Sobre el anillo exterior del calendario el arrastre mueve el anillo, que
+era móvil de verdad. Un toque simple selecciona la pieza.
+
+En la vista de engranajes se señala una rueda por **su corona dentada o por su letra**, nunca por el
+centro: catorce de las treinta y cuatro ruedas van montadas de a dos, tres o seis sobre el mismo
+árbol, así que comparten centro exacto y una diana circular en el eje solo dejaría alcanzar la mayor
+de cada grupo. Al seleccionar una rueda se enciende ella y queda a media luz el tren al que
+pertenece, porque una rueda sola no significa nada: lo que significa es de quién es compañera.
+
 ---
 
 ## Evidencia e interpretación
@@ -70,8 +82,17 @@ de celda y el solar al final; con el orden contrario el ajuste se desploma a cer
 npm run build      # src/ → index.html (un solo archivo, ~168 KB)
 npm run dev        # construye y sirve en localhost:5173
 npm install        # solo si vas a correr las pruebas
-npm run check      # prueba de humo: 3 anchos × 3 modelos × 6 vistas × 82 fragmentos
+npm run check      # las tres pruebas seguidas
 ```
+
+Las pruebas son tres y ninguna necesita servidor:
+
+| Script | Qué comprueba |
+|---|---|
+| `scripts/check.mjs` | 3 anchos × 3 modelos × 6 vistas × 82 fragmentos, sin un solo error de consola, más los invariantes del mecanismo: 51 glifos, 38 lunares, 27 solares, 254/19, 235/19, 940/4237 |
+| `scripts/jitter.mjs` | Que la caja **no salte**. Recorre 400 fechas midiendo la altura de cada celda: el texto cambia de largo con la fecha, así que si no está reservada la altura, la página entera se mueve mientras la manivela corre |
+| `scripts/drag-test.mjs` | Que arrastrar gire exactamente 78.6 días por vuelta, que el anillo del calendario gire sin mover la máquina, que un toque siga seleccionando y que el giro automático se detenga al agarrar |
+| `scripts/gear-hit.mjs` | Que **las 34 ruedas se puedan señalar**. Hace 68 clics reales —la letra y la corona de cada una— y exige que cada uno seleccione su propia rueda, no la vecina ni la coaxial; luego barre el lienzo entero comprobando que ninguna quede sin un solo píxel suyo |
 
 `index.html` está versionado a propósito: es el entregable, y así el repo se puede clonar y abrir
 sin instalar nada. El código fuente vive en `src/` y `build.mjs` lo concatena en orden.
@@ -117,6 +138,12 @@ npx vercel --prod
 - Woan, G. & Bayley, J., *Horological Journal* (2024) — el recuento de 354 agujeros.
 - Szigety, S. & Arenas, A., arXiv:2504.00327 (2025) — el criterio de atascamiento.
 - Price, D. de S., *Gears from the Greeks*, TAPS **64**.7 (1974).
+
+---
+
+## Autor
+
+**Raúl Gabino Quilantán** — [WhatsApp +52 834 130 9459](https://wa.me/528341309459)
 
 ---
 

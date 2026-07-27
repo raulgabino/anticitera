@@ -47,7 +47,14 @@ function txt(s, x, y, col, size, align, rot, weight) {
   ctx.fillStyle = col; ctx.font = `${weight || 500} ${size}px ui-sans-serif,-apple-system,"Segoe UI",sans-serif`;
   ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 0); ctx.restore();
 }
-function hit(id, x, y, r) { hits.push({ id, x, y, r }); }
+/* Dianas del lienzo.
+   hit()     = disco: se acierta si el toque cae a menos de r del centro.
+   hitRing() = corona: se acierta si el toque cae a menos de tol del radio R.
+   La corona existe porque las ruedas coaxiales comparten centro exacto: un disco
+   en el árbol solo dejaba tocar la mayor de cada eje y las otras eran inalcanzables.
+   pri rompe empates antes que la distancia: 2 = etiqueta, 1 = corona, 0 = todo lo demás. */
+function hit(id, x, y, r, pri) { hits.push({ id, x, y, r, pri: pri || 0 }); }
+function hitRing(id, x, y, R, tol, pri) { hits.push({ id, x, y, r: tol, ring: R, pri: pri || 0 }); }
 const SCALE_IDS = new Set(['zodiaco', 'calendario']);
 const dim = id => !sel || sel === id ? 1 : (SCALE_IDS.has(id) ? 0.72 : 0.2);
 
@@ -342,6 +349,10 @@ const RATE = { b: 1, c: -64 / 38, d: 3.368421, e: -13.368421, e3: -477 / 4237,
   k: 13.14326, f: 0.399358, g: -940 / 4237, h: 0.073952, i: -235 / 12711,
   l: -64 / 38, m: 0.929825, n: -5 / 19, o: .25, p: 0.0657895, q: -1 / 76 };
 
+/* e3 y e4 van sobre el árbol e pero no giran con él: e3 es el portador epicíclico.
+   k2 va sobre su propio eje, descentrado 1.1 mm del de k1. */
+function gearRate(id, arb) { return RATE[(id === 'e3' || id === 'e4') ? 'e3' : (id === 'k2' ? 'k' : arb)]; }
+
 let LAYOUT = null;
 function solveLayout() {
   const at = (o, dist, deg) => [o[0] + dist * Math.cos(deg * D2R), o[1] + dist * Math.sin(deg * D2R)];
@@ -403,16 +414,18 @@ function drawGears(o) {
 
   const order = GEARS.slice().sort((a, b) => b[2] - a[2]);
   for (const [id, N, rp, arb, ev, ch] of order) {
-    const key = (id === 'e3' || id === 'e4') ? 'e3' : (id === 'k2' ? 'k' : arb);
     const p = A[arb], x = X(p), y = Y(p), rr = rp * s;
-    let rate = RATE[key] !== undefined ? RATE[key] : RATE[arb];
+    const rate = gearRate(id, arb);
     let ang = -rate * o.T * TAU;
     if (id === 'e1' || id === 'e6') ang -= dev;
     if (id === 'k2') ang = -RATE.k * o.T * TAU + dev;
 
     const isHot = (hot && ch === hot) || sel === id;
     const anySel = hot || selGear;
-    ctx.globalAlpha = anySel ? (isHot ? 1 : .16) : (ev === 1 ? .78 : .5);
+    /* al señalar una rueda suelta se deja ver a media luz el tren al que pertenece:
+       una rueda sola no dice nada, lo que significa es de quién es compañera */
+    const kin = selGear && !hot && ch === selGear[5] && !isHot;
+    ctx.globalAlpha = anySel ? (isHot ? 1 : kin ? .42 : .13) : (ev === 1 ? .78 : .5);
     const col = isHot ? ACCENT : (ev === 1 ? GEAR_SURV : GEAR_REC);
     if ((TAU * rr / N) > 2.6) {
       gearPath(x, y, rr, N, ang);
@@ -432,15 +445,18 @@ function drawGears(o) {
     }
     dot(x, y, 1.6, col);
     if (id === 'o1' && rr > 8) txt('frag. B', x + rr + 4, y + rr * .7, GEAR_SURV, Math.max(7, W * .019), 'left', 0, 700);
-    if (rr > 9) {
-      const sib = GEARS.filter(g => g[3] === arb), k = sib.findIndex(g => g[0] === id);
-      const la = sib.length > 1 ? (-100 + k * (330 / sib.length)) * D2R : -Math.PI / 2;
-      const lr = sib.length > 1 ? Math.min(rr * .68, rr - 5) : 0;
-      txt(id, x + lr * Math.cos(la), y + lr * Math.sin(la), isHot ? '#fff' : col,
-          Math.min(10, Math.max(6.8, rr * .28)), 'center', 0, 700);
-    }
+    const sib = GEARS.filter(g => g[3] === arb), k = sib.findIndex(g => g[0] === id);
+    const la = sib.length > 1 ? (-100 + k * (330 / sib.length)) * D2R : -Math.PI / 2;
+    const lr = sib.length > 1 ? Math.min(rr * .68, rr - 5) : 0;
+    const lx = x + lr * Math.cos(la), ly = y + lr * Math.sin(la);
+    const labelled = rr > 9;
+    if (labelled) txt(id, lx, ly, isHot ? '#fff' : col,
+                      Math.min(10, Math.max(6.8, rr * .28)), 'center', 0, 700);
     ctx.globalAlpha = 1;
-    hit(id, x, y, Math.max(9, Math.min(rr, 24)));
+    /* se señala una rueda por su corona o por su letra, nunca por el eje que comparte */
+    hitRing(id, x, y, rr, Math.max(7, Math.min(14, rr * .55)), 1);
+    if (labelled) hit(id, lx, ly, Math.max(11, Math.min(16, rr * .30)), 2);
+    else hit(id, x, y, Math.max(9, rr), 2);   // demasiado chica para llevar letra: su diana es el eje mismo
   }
 
   /* el perno y la ranura k1/k2: el corazón no lineal */

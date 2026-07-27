@@ -62,7 +62,7 @@ h1 .gr{color:var(--bronze);font-weight:500}
 .models button b{display:block;font-size:11px;font-weight:700;letter-spacing:.01em}
 .models button span{display:block;font-size:9px;letter-spacing:.02em;margin-top:3px;opacity:.85}
 .models button[aria-pressed="true"]{background:var(--surface2);border-color:#4a4238;color:var(--bronze-hi)}
-.modelnote{font-size:11.5px;color:var(--ink3);margin:10px 0 0;line-height:1.55;
+.modelnote{font-size:11.5px;color:var(--ink3);margin:10px 0 0;line-height:1.55;min-height:52px;
   background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
 .cmp{grid-column:1/-1;background:#1b2028}
 
@@ -70,23 +70,39 @@ h1 .gr{color:var(--bronze);font-weight:500}
 .subtabs button{padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:transparent;
   color:var(--ink3);font:600 12px/1 inherit;letter-spacing:.01em;cursor:pointer;font-family:inherit;transition:.15s}
 .subtabs button[aria-pressed="true"]{background:var(--surface2);border-color:#565248;color:var(--ink)}
-.viewnote{margin:8px 0 9px;font-size:12px;line-height:1.5;color:var(--ink3)}
+.viewnote{margin:8px 0 9px;font-size:12px;line-height:1.5;color:var(--ink3);min-height:36px}
 
 /* canvas */
 .stage{position:relative;background:var(--surface);border:1px solid var(--line);
   border-radius:14px;overflow:hidden}
-canvas{display:block;width:100%;touch-action:pan-y}
+canvas{display:block;width:100%;touch-action:pan-y;cursor:grab}
+canvas:active{cursor:grabbing}
 
 /* readout */
 .readout{margin-top:10px;background:var(--surface);border:1px solid var(--line);
   border-radius:14px;padding:12px 13px}
-.datebar{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.dateval{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.datebar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  flex-wrap:nowrap;min-height:26px}
+.dateval{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
 .dateval small{font-weight:400;color:var(--ink3);font-size:11.5px;letter-spacing:.04em}
-.turns{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:11px;
+.turns{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:11px;align-items:stretch;
   background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden}
-.cell{background:var(--surface);padding:8px 9px;min-height:52px}
+/* Alturas reservadas: el texto cambia de largo con la fecha, así que
+   cada celda ocupa siempre lo de su peor caso. Sin esto, la caja salta
+   entera cuando la manivela corre. scripts/jitter.mjs lo verifica. */
+.cell{background:var(--surface);padding:8px 9px;min-height:88px}
+.cell.wide{grid-column:1/-1;min-height:76px}
+.cell.c-ecl{min-height:104px}
+.cell.c-pla{min-height:112px}
+.cell.c-cmp{min-height:114px}
+.cell.c-drift{min-height:104px}
+.cell .v{font-variant-numeric:tabular-nums}
+.chip{display:inline-block;white-space:nowrap;margin:0 10px 0 0;font-size:12px;line-height:1.8}
+.chip.fx{width:8.9em;margin-right:2px;overflow:hidden}
+.chip .rx{display:inline-block;width:.9em}
+.chip i{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
 .cell .k{font-size:10px;letter-spacing:.05em;color:var(--ink3);text-transform:uppercase;
   display:flex;align-items:center;gap:5px}
 .cell .k i{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
@@ -98,20 +114,29 @@ canvas{display:block;width:100%;touch-action:pan-y}
 /* controls */
 .controls{margin-top:10px;background:var(--surface);border:1px solid var(--line);
   border-radius:14px;padding:12px 13px}
-.modes{display:flex;gap:5px;margin-bottom:12px}
-.mode{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:transparent;
+.controls.sticky{position:sticky;bottom:8px;z-index:14;
+  background:rgba(28,28,27,.94);backdrop-filter:blur(10px);
+  box-shadow:0 6px 22px rgba(0,0,0,.45);
+  /* La barra flota sobre el lienzo en pantallas cortas. Solo los mandos
+     interceptan el toque; el resto lo deja pasar a la máquina de abajo. */
+  pointer-events:none}
+.controls.sticky button,.controls.sticky input,.controls.sticky select,.controls.sticky canvas{pointer-events:auto}
+.modes{display:flex;gap:5px;margin-bottom:9px}
+.mode{flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:transparent;
   color:var(--ink3);font:600 12px/1 inherit;letter-spacing:.02em;cursor:pointer;font-family:inherit}
 .mode[aria-pressed="true"]{background:var(--surface2);color:var(--bronze-hi);border-color:#4a4238}
-.crankrow{display:flex;align-items:center;gap:14px}
-#crank{flex:none;touch-action:none;cursor:grab}
+.crankrow{display:flex;align-items:center;gap:9px}
+#crank{touch-action:none;cursor:grab;display:block;margin:0 auto}
 #crank:active{cursor:grabbing}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1}
-.steps button{padding:9px 2px;border-radius:8px;border:1px solid var(--line);
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;flex:1}
+.steps button{padding:8px 2px;border-radius:8px;border:1px solid var(--line);
   background:var(--surface2);color:var(--ink2);font:600 11.5px/1 inherit;cursor:pointer;font-family:inherit}
 .steps button:active{background:#2e2c28;color:var(--bronze-hi)}
-.playrow{display:flex;gap:6px;margin-top:9px;align-items:center}
-.playrow button{padding:9px 12px;border-radius:8px;border:1px solid var(--line);
-  background:var(--surface2);color:var(--ink2);font:600 11.5px/1 inherit;cursor:pointer;font-family:inherit}
+.playrow{display:none;gap:9px;margin-top:8px;align-items:center}
+.playrow.on{display:flex}
+.cue{font-size:10.5px;color:var(--ink3);flex:none;letter-spacing:.01em}
+#play{padding:9px 13px;flex:none;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface2);color:var(--ink2);font:600 12.5px/1 inherit;cursor:pointer;font-family:inherit;min-width:42px}
 .playrow button[aria-pressed="true"]{color:var(--bronze-hi);border-color:#4a4238}
 .playrow input[type=range]{flex:1;accent-color:var(--bronze)}
 .dateform{display:none;gap:6px;flex-wrap:wrap;align-items:flex-end}
@@ -181,6 +206,13 @@ table.t th,table.t td{border-bottom:1px solid var(--line);padding:5px 4px;text-a
 table.t th{color:var(--ink3);font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase}
 table.t td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 footer{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.6;text-align:center}
+footer .sig{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink2);font-size:12px}
+footer .sig b{color:var(--ink);font-weight:600}
+footer .wa{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:14px 18px;
+  border:1px solid var(--line);border-radius:999px;color:var(--patina);text-decoration:none;
+  font-size:13px;line-height:1;background:var(--surface)}
+footer .wa:hover{border-color:var(--patina);background:var(--surface2)}
+footer .wa svg{width:14px;height:14px;fill:currentColor;flex:none}
 </style>
 </head>
 <body>
@@ -234,7 +266,7 @@ footer{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.6;text-ali
     a partir de qué ruedas engranan con qué.</p>
 </div>
 
-<div class="controls" id="mainCtl">
+<div class="controls sticky" id="mainCtl">
   <div class="modes">
     <button class="mode" id="mCrank" aria-pressed="true">MANIVELA</button>
     <button class="mode" id="mDate" aria-pressed="false">PREGUNTA</button>
@@ -242,16 +274,17 @@ footer{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.6;text-ali
 
   <div id="panelCrank">
     <div class="crankrow">
-      <canvas id="crank" width="180" height="180" style="width:90px;height:90px"></canvas>
+      <canvas id="crank" width="180" height="180" style="width:56px;height:56px" title="manivela"></canvas>
       <div class="steps">
         <button data-d="-30">−30 d</button>
         <button data-d="-1">−1 d</button>
         <button data-d="1">+1 d</button>
         <button data-d="30">+30 d</button>
       </div>
+      <button id="play" aria-pressed="false">▶</button>
     </div>
-    <div class="playrow">
-      <button id="play" aria-pressed="false">▶ girar</button>
+    <div class="playrow" id="playrow">
+      <span class="cue">velocidad</span>
       <input type="range" id="speed" min="1" max="400" value="60" aria-label="velocidad">
     </div>
   </div>
@@ -313,6 +346,14 @@ footer{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.6;text-ali
   Reconstrucción basada en Freeth et al. 2021 (<i>Scientific Reports</i> 11:5821), Freeth &amp; Jones 2012
   (<i>ISAW Papers</i> 4) y Freeth et al. 2006/2008 (<i>Nature</i>).<br>
   Dimensiones tomadas de las tomografías de rayos X. Los errores son los de la máquina, no los del navegador.
+  <div class="sig">
+    Reconstrucción y desarrollo: <b>Raúl Gabino Quilantán</b><br>
+    <a class="wa" href="https://wa.me/528341309459" target="_blank" rel="noopener"
+       aria-label="Escribir por WhatsApp a Raúl Gabino Quilantán, +52 834 130 9459">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 1.67c2.2 0 4.27.86 5.83 2.42a8.2 8.2 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.25 8.24a8.24 8.24 0 0 1-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.26-8.24Zm-4.5 4.4c-.2 0-.53.08-.81.38-.28.3-1.06 1.04-1.06 2.53 0 1.49 1.09 2.93 1.24 3.13.15.2 2.1 3.2 5.09 4.37.71.31 1.27.49 1.7.63.71.23 1.36.19 1.88.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.29.17-1.42-.07-.12-.27-.2-.57-.35-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48a9 9 0 0 1-1.66-2.06c-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.62-.92-2.21-.24-.58-.48-.5-.66-.51h-.57Z"/></svg>
+      WhatsApp · +52 834 130 9459
+    </a>
+  </div>
 </footer>
 
 </div>

@@ -88,6 +88,7 @@ function refreshPlanetInfo() {
 refreshPlanetInfo();
 
 /* engranes */
+const NUM = ['', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete'];
 const GEARNOTE = {
   b1: 'La Rueda Motriz. 223 dientes, 130 mm de diámetro, 2.7 mm de espesor, cuatro radios. Es la más grande y la más gruesa porque es la más cargada. Sobre ella iban montados todos los epiciclos planetarios.',
   d2: '127 dientes. No es un número cualquiera: 127 = 254/2, y 254 mesesidéreos en 19 años es la relación que define la Luna. Un primo escondido en el metal.',
@@ -258,78 +259,110 @@ Object.assign(INFO, {
 });
 
 /* ---------- estado y lectura ---------- */
-function updateReadout(o) {
-  const f = fmtDate(o.jd);
-  document.getElementById('dateval').innerHTML = `${f.txt} <small>${f.cal}</small>`;
-  document.getElementById('turns').textContent =
-    `${o.crankTurns >= 0 ? '' : '−'}${Math.abs(o.crankTurns).toFixed(2)} vueltas de manivela · b1 ${o.T.toFixed(3)}`;
+/* ============================================================
+   LECTURA
+   Se construye UNA vez y después solo se actualiza el texto.
+   Antes se reconstruía el innerHTML en cada fotograma: con la manivela
+   girando, eso hacía saltar toda la caja. Tres reglas ahora:
+     · el esqueleto no cambia nunca — todas las filas siempre presentes
+     · cada celda tiene altura reservada, así nada empuja a lo de abajo
+     · los planetas van SIEMPRE en orden cosmológico, nunca ordenados
+       por valor: si se reordenan solos, la vista es ilegible en marcha
+   ============================================================ */
+let RO = null;
+function buildReadout() {
+  const grid = document.getElementById('grid');
+  const mk = (cls, id) => {
+    const d = document.createElement('div');
+    d.className = 'cell' + (cls ? ' ' + cls : '');
+    if (id) d.dataset.id = id;
+    d.innerHTML = '<div class="k"></div><div class="v"></div>';
+    grid.appendChild(d);
+    return { box: d, k: d.querySelector('.k'), v: d.querySelector('.v') };
+  };
+  grid.textContent = '';
+  RO = {
+    dateval: document.getElementById('dateval'),
+    turns: document.getElementById('turns'),
+    sol: mk('', 'sol'), luna: mk('', 'luna'),
+    mes: mk('', 'metonico'), juegos: mk('', 'juegos'),
+    ecl: mk('wide c-ecl', 'glifos'), pla: mk('wide c-pla', ''),
+    cmp: mk('wide cmp c-cmp', ''), drift: mk('wide c-drift', '')
+  };
+  grid.onclick = e => { const c = e.target.closest('.cell[data-id]'); if (c && c.dataset.id) select(c.dataset.id); };
+}
 
-  const MD0 = MODELS[MK], sunLon = MD0.trueSun ? o.trueSun : o.meanSun;
+const ZAB = ['Ari','Tau','Gém','Cán','Leo','Vir','Lib','Esc','Sag','Cap','Acu','Pis'];
+const PHASE = e => e < 22 || e > 338 ? 'nueva' : e < 68 ? 'creciente' :
+  e < 112 ? 'cuarto creciente' : e < 158 ? 'gibosa creciente' :
+  e < 202 ? 'llena' : e < 248 ? 'gibosa menguante' :
+  e < 292 ? 'cuarto menguante' : 'menguante';
+
+function updateReadout(o) {
+  if (!RO) buildReadout();
+  const MD = MODELS[MK];
+  const f = fmtDate(o.jd);
+  RO.dateval.innerHTML = `${f.txt} <small>${f.cal}</small>`;
+  RO.turns.textContent = `${Math.abs(o.crankTurns).toFixed(2)} vueltas · b1 ${o.T.toFixed(3)}`;
+
+  const sunLon = MD.trueSun ? o.trueSun : o.meanSun;
   const sign = ZODIAC[Math.floor(n360(sunLon) / 30)], signM = ZODIAC[Math.floor(n360(o.trueMoon) / 30)];
   const dg = x => `${Math.floor(x % 30)}°${String(Math.floor((x % 1) * 60)).padStart(2, '0')}′`;
-  const phaseName = o.elong < 22 || o.elong > 338 ? 'nueva' : o.elong < 68 ? 'creciente' :
-    o.elong < 112 ? 'cuarto creciente' : o.elong < 158 ? 'gibosa creciente' :
-    o.elong < 202 ? 'llena' : o.elong < 248 ? 'gibosa menguante' :
-    o.elong < 292 ? 'cuarto menguante' : 'menguante';
+  const key = (n, col) => `<i style="background:${col}"></i>${n}`;
+
+  RO.sol.k.innerHTML = key(MD.trueSun ? 'Sol verdadero' : 'Sol medio', C.sol);
+  RO.sol.v.innerHTML = `${sign[1]} ${dg(sunLon)} <em>${sign[0]}</em>`;
+  RO.luna.k.innerHTML = key('Luna', C.luna);
+  RO.luna.v.innerHTML = `${signM[1]} ${dg(o.trueMoon)} <em>${PHASE(o.elong)}, ${o.age.toFixed(1)} d</em>`;
+  RO.mes.k.innerHTML = key('Mes corintio', C.bronze);
+  RO.mes.v.innerHTML = `${o.corinth.name}${o.corinth.inter ? ' <em>intercalar</em>' : ''} <em>año ${o.corinth.y} de 19</em>`;
+  RO.juegos.k.innerHTML = key('Juegos', C.patina);
+  RO.juegos.v.innerHTML = `${GAMES[o.gamesSector][1]} <em>+ ${GAMES[o.gamesSector][0]}</em>`;
+
+  /* — eclipses: dos líneas siempre. El griego grabado vive en la ficha, no aquí — */
   const g = o.glyph;
-
-  const cells = [
-    ['sol', MD0.trueSun ? 'Sol verdadero' : 'Sol medio', `${sign[1]} ${dg(sunLon)} <em>${sign[0]}</em>`, C.sol],
-    ['luna', 'Luna', `${signM[1]} ${dg(o.trueMoon)} <em>${phaseName}, ${o.age.toFixed(1)} d</em>`, C.luna],
-    ['metonico', 'Mes corintio', `${o.corinth.name}${o.corinth.inter ? ' <em>intercalar</em>' : ''} <em>año ${o.corinth.y} de 19</em>`, C.bronze],
-    ['juegos', 'Juegos', `${GAMES[o.gamesSector][1]} <em>+ ${GAMES[o.gamesSector][0]}</em>`, C.patina]
-  ];
-  let html = cells.map(([id, k, v, col]) =>
-    `<div class="cell" data-id="${id}"><div class="k"><i style="background:${col}"></i>${k}</div><div class="v">${v}</div></div>`).join('');
-
-  let ecl;
   if (g) {
-    const [, bits, idxKey, engCell] = g, gt = GLYPH_TEXT[engCell];
+    const [, bits, idxKey, engCell] = g;
     const tipo = (bits & 2 ? '<b>lunar</b> (Σ)' : '') + (bits === 3 ? ' y ' : '') + (bits & 1 ? '<b>solar</b> (Η)' : '');
-    ecl = `<div class="cell eclipse" data-id="glifos"><div class="k"><i style="background:${C.bronzeHi}"></i>Glifo del Saros · celda grabada ${engCell} · índice ${IDX_GR[idxKey] || idxKey}</div>
-      <div class="v">Posibilidad de eclipse ${tipo}
-      ${gt ? `<div class="gk2" style="margin:7px 0 4px;font-size:13px">${gt[0].replace(/\|/g, '<br>')}</div>
-        <em>${gt[1]} · grabado, Fragmento ${gt[2]}</em>`
-        : `<em style="display:block;margin-top:4px">La hora se perdió: esta celda es reconstrucción de la Tabla 4.6, no texto leído.</em>`}
-      <em>Súmale ${['0', '8', '16'][o.exeligmosSector]} h por el exeligmós.</em></div></div>`;
+    RO.ecl.box.classList.remove('none');
+    RO.ecl.k.innerHTML = key(`Saros · celda ${o.sarosCell + 1} de 223 · grabada ${engCell} · índice ${IDX_GR[idxKey] || idxKey}`, C.bronzeHi);
+    RO.ecl.v.innerHTML = `Posibilidad de eclipse ${tipo}, más ${['0', '8', '16'][o.exeligmosSector]} h por el exeligmós.
+      <em>${GLYPH_TEXT[engCell] ? 'Toca para ver el grabado.' : 'La hora se perdió: celda reconstruida.'}</em>`;
   } else {
-    ecl = `<div class="cell eclipse none" data-id="saros"><div class="k"><i style="background:${C.line}"></i>Dial del Saros · celda ${o.sarosCell + 1} de 223</div>
-      <div class="v"><em>celda sin glifo — ningún eclipse posible este mes</em></div></div>`;
+    RO.ecl.box.classList.add('none');
+    RO.ecl.k.innerHTML = key(`Saros · celda ${o.sarosCell + 1} de 223`, C.line);
+    RO.ecl.v.innerHTML = `<em>celda sin glifo — ningún eclipse posible este mes</em>`;
   }
 
-  const MD = MD0;
-  const planetLine = PLANETS.map(p => {
-    const st = o.planets[p.id], z = ZODIAC[Math.floor(st.lon / 30)];
-    return `<span style="color:${C[p.id]}">●</span> ${p.es} ${z[1]} ${Math.floor(st.lon % 30)}°${st.retro ? ' ℞' : ''}`;
-  }).join(' &nbsp; ');
-  const planetCell = MD.planets
-    ? `<div class="cell" style="grid-column:1/-1"><div class="k">Los cinco planetas <em style="text-transform:none;letter-spacing:0">℞ = retrógrado</em></div>
-       <div class="v" style="font-size:12px;line-height:1.7">${planetLine}</div></div>`
-    : `<div class="cell" style="grid-column:1/-1"><div class="k">Los cinco planetas</div>
-       <div class="v" style="font-size:12px;line-height:1.6"><em>Voulgaris et al. 2026 sostienen que no estaban.
-       Nombrarlos en la inscripción no prueba que hubiera engranaje para moverlos.</em></div></div>`;
-  let cmpCell = '';
+  /* — planetas: orden cosmológico fijo, nunca por valor — */
+  RO.pla.k.innerHTML = MD.planets
+    ? `Los cinco planetas <em style="text-transform:none;letter-spacing:0">℞ = retrógrado</em>` : 'Los cinco planetas';
+  RO.pla.v.innerHTML = MD.planets
+    ? PLANETS.map(p => {
+        const st = o.planets[p.id], z = ZODIAC[Math.floor(st.lon / 30)];
+        return `<span class="chip fx"><i style="background:${C[p.id]}"></i>${p.es} ${ZAB[Math.floor(st.lon / 30)]} ${String(Math.floor(st.lon % 30)).padStart(2, ' ')}°<b class="rx">${st.retro ? '℞' : ''}</b></span>`;
+      }).join('')
+    : `<em>Voulgaris et al. 2026 sostienen que no estaban. Nombrarlos en la inscripción no prueba que hubiera engranaje para moverlos.</em>`;
+
+  /* — discrepancia entre modelos, mismo orden fijo — */
   if (MD.planets) {
     const otro = MK === 'f2021' ? 'fj2012' : 'f2021';
-    const rows = PLANETS.map(p => {
+    RO.cmp.k.innerHTML = key(`Discrepancia con ${MODELS[otro].short}`, C.patina);
+    RO.cmp.v.innerHTML = PLANETS.map(p => {
       const ol = lonFor(otro, p.id, o.T); let d = Math.abs(ol - o.planets[p.id].lon); if (d > 180) d = 360 - d;
-      return { es: p.es, d, col: C[p.id] };
-    }).sort((a, b) => b.d - a.d);
-    cmpCell = `<div class="cell cmp" style="grid-column:1/-1"><div class="k"><i style="background:var(--patina)"></i>Discrepancia con ${MODELS[otro].short}, hoy</div>
-      <div class="v" style="font-size:12px;line-height:1.7">${rows.map(x =>
-        `<span style="color:${x.col}">●</span> ${x.es} <b>${x.d.toFixed(1)}°</b>`).join(' &nbsp; ')}</div></div>`;
+      return `<span class="chip fx"><i style="background:${C[p.id]}"></i>${p.es} <b>${d.toFixed(1)}°</b></span>`;
+    }).join('');
+  } else {
+    RO.cmp.k.innerHTML = key('Discrepancia entre modelos', C.line);
+    RO.cmp.v.innerHTML = `<em>esta lectura no propone planetas, así que no hay con qué comparar</em>`;
   }
 
+  /* — error acumulado: la fila existe siempre, para que nada salte — */
   const yrs = Math.abs(o.T);
-  const drift0 = yrs > 40 ? `<div class="cell" style="grid-column:1/-1"><div class="k"><i style="background:var(--ink3)"></i>Error acumulado · ${Math.round(yrs)} años desde la calibración</div>
-     <div class="v" style="font-size:12px;line-height:1.6">Luna <b>${(yrs * 0.06553).toFixed(1)}°</b> fuera de sitio &nbsp;·&nbsp; Sol ${(yrs * 0.00447).toFixed(1)} d respecto a las estaciones
-     &nbsp;·&nbsp; metónico ${Math.abs(o.drift.metonic).toFixed(1)} d &nbsp;·&nbsp; Saros ${(yrs / 18.0298 * 0.0767).toFixed(1)} d
-     <em>— la Luna es la aguja más rápida, así que su error de 32 segundos por mes es el que más se acumula</em></div></div>` : '';
-
-  document.getElementById('grid').innerHTML = html + ecl + planetCell + cmpCell + drift0;
-
-  document.querySelectorAll('#grid .cell[data-id]').forEach(el =>
-    el.onclick = () => { select(el.dataset.id); });
+  RO.drift.k.innerHTML = key(`Error acumulado · ${Math.round(yrs)} años desde la calibración`, C.ink3);
+  RO.drift.v.innerHTML = yrs < 5
+    ? `<em>todavía nada apreciable: la máquina acaba de calibrarse</em>`
+    : `<span class="chip fx">Luna <b>${(yrs * 0.06553).toFixed(1)}°</b></span><span class="chip fx">Sol ${(yrs * 0.00447).toFixed(1)} d</span><span class="chip fx">metónico ${Math.abs(o.drift.metonic).toFixed(1)} d</span><span class="chip fx">Saros ${(yrs / 18.0298 * 0.0767).toFixed(1)} d</span>`;
 }
 
 function select(id) {
@@ -359,12 +392,21 @@ function showInfo(id) {
   }
   const gearRow = GEARS.find(g => g[0] === id);
   if (gearRow) {
-    const [gid, N, rp, arb, ev] = gearRow;
-    const rate = RATE[(gid === 'e3' || gid === 'e4') ? 'e3' : (gid === 'k2' ? 'k' : arb)];
+    const [gid, N, rp, arb, ev, ch] = gearRow;
+    const rate = gearRate(gid, arb);
+    const sib = GEARS.filter(g => g[3] === arb && g[0] !== gid);
+    const junto = sib.filter(g => gearRate(g[0], arb) === rate).map(g => g[0]);
+    const suelto = sib.filter(g => gearRate(g[0], arb) !== rate).map(g => g[0]);
+    const lista = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1] : a[0];
+    let eje = `sobre el árbol <b>${arb}</b>`;
+    if (junto.length) eje += `, clavada al mismo eje que ${lista(junto)}: las ${NUM[junto.length + 1] || junto.length + 1} giran solidarias`;
+    if (suelto.length) eje += `${junto.length ? '; ' : ', pero '}${lista(suelto)} comparte${suelto.length > 1 ? 'n' : ''} ese eje sin girar con ${junto.length ? 'ellas' : 'ella'}: ahí está el epiciclo`;
+    if (!junto.length && !suelto.length) eje += ', que no comparte con ninguna otra rueda';
     box.innerHTML = `<h3>Engrane ${gid}</h3>
       <div class="gk">${N} dientes · radio primitivo ${rp} mm · módulo ${(2 * rp / N).toFixed(3)}</div>
       <span class="ev ev${ev}">${EVLABEL[ev - 1]}</span>
       <p>${GEARNOTE[gid] || 'Rueda de bronce de dientes triangulares, cortada a lima. Las divisiones desiguales indican que no se usó máquina divisora.'}</p>
+      <p style="color:var(--ink3);font-size:12px">Va en el tren de <b>${CHAIN_NAME[ch] || ch}</b>, ${eje}.</p>
       <div class="chain">${rate >= 0 ? '+' : '−'}${Math.abs(rate).toFixed(6)} vueltas por año de b1</div>
       <div class="src">Medidas: Freeth et al. 2021, <i>Scientific Reports</i> 11:5821, Tabla Suplementaria S8 (tomografía de rayos X).</div>`;
     return;
@@ -515,34 +557,101 @@ crank.addEventListener('mousedown', crankStart); crank.addEventListener('touchst
 window.addEventListener('mousemove', crankMove); window.addEventListener('touchmove', crankMove, { passive: false });
 window.addEventListener('mouseup', crankEnd); window.addEventListener('touchend', crankEnd);
 
-/* ---------- arrastre del anillo del calendario ---------- */
-let dragCal = false, calLast = 0;
-cv.addEventListener('touchstart', e => {
-  if (view !== 'front') return;
-  const r = cv.getBoundingClientRect(), p = e.touches[0];
-  const d = Math.hypot(p.clientX - (r.left + W / 2), p.clientY - (r.top + W / 2 + 4));
-  if (d > W * .41 && d < W * .48) { dragCal = true; calLast = Math.atan2(p.clientY - (r.top + W / 2 + 4), p.clientX - (r.left + W / 2)); e.preventDefault(); }
-}, { passive: false });
-cv.addEventListener('touchmove', e => {
-  if (!dragCal) return;
-  const r = cv.getBoundingClientRect(), p = e.touches[0];
-  const a = Math.atan2(p.clientY - (r.top + W / 2 + 4), p.clientX - (r.left + W / 2));
-  let d = a - calLast; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
-  calLast = a; calRingOffset += d * R2D; render(); e.preventDefault();
-}, { passive: false });
-cv.addEventListener('touchend', () => { dragCal = false; });
+/* ============================================================
+   ARRASTRAR SOBRE LA MÁQUINA PARA GIRARLA
+   El control estaba abajo y el aparato arriba: en el teléfono no
+   cabían los dos en pantalla. Ahora la máquina ES el control, que
+   es como se usaba el original — se agarra y se gira.
+     · arrastrar sobre el anillo exterior del calendario = girar el anillo
+     · arrastrar en cualquier otro sitio = dar vuelta a la manivela
+     · un giro completo del dedo = una vuelta de manivela = 78.6 días
+   Un gesto vertical sigue haciendo scroll: solo capturamos cuando el
+   movimiento es claramente horizontal.
+   ============================================================ */
+const TURNABLE = new Set(['front', 'back', 'gears', 'corte']);
+let drag = null;
+
+function dialCenter() {
+  return view === 'front' ? { cx: W / 2, cy: W * .565, R: W * .452 }
+                          : { cx: W / 2, cy: H / 2, R: Math.min(W, H) * .45 };
+}
+function localPt(ev) {
+  const r = cv.getBoundingClientRect();
+  return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+}
+
+cv.addEventListener('pointerdown', ev => {
+  if (!TURNABLE.has(view)) return;
+  const p = localPt(ev), c = dialCenter();
+  const d = Math.hypot(p.x - c.cx, p.y - c.cy);
+  const onRing = view === 'front' && d > c.R * .87 && d < c.R * 1.02;
+  drag = { id: ev.pointerId, touch: ev.pointerType !== 'mouse',
+           x0: ev.clientX, y0: ev.clientY, xl: ev.clientX,
+           ang: Math.atan2(p.y - c.cy, p.x - c.cx),
+           mode: onRing ? 'ring' : null, locked: onRing, moved: false };
+  if (onRing) cv.setPointerCapture(ev.pointerId);
+});
+
+cv.addEventListener('pointermove', ev => {
+  if (!drag || ev.pointerId !== drag.id) return;
+  const dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+  if (!drag.locked) {
+    /* Con ratón no hay conflicto: cualquier movimiento agarra, y el giro es
+       circular. Con el dedo sí lo hay —la página necesita poder desplazarse—
+       así que solo agarramos cuando el gesto es claramente horizontal, y
+       entonces el giro se mide por el desplazamiento lateral. */
+    if (drag.touch) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+    } else if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+    drag.locked = true; drag.mode = 'turn';
+    cv.setPointerCapture(ev.pointerId);
+  }
+  drag.moved = true;
+  const p = localPt(ev), c = dialCenter();
+  let turns;
+  if (drag.mode === 'ring' || !drag.touch) {
+    const a = Math.atan2(p.y - c.cy, p.x - c.cx);
+    let da = a - drag.ang; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+    drag.ang = a; turns = da / TAU;
+    if (drag.mode === 'ring') { calRingOffset += da * R2D; render(); ev.preventDefault(); return; }
+  } else {
+    turns = (ev.clientX - drag.xl) / Math.max(120, W);   // el ancho del lienzo = una vuelta
+    drag.xl = ev.clientX;
+  }
+  T += turns / M.crankRatio;
+  stopPlay(); render(); ev.preventDefault();
+});
+
+function endDrag(ev) {
+  if (!drag || (ev && ev.pointerId !== drag.id)) return;
+  const wasTap = !drag.moved;
+  drag = null;
+  if (wasTap && ev) canvasTap(ev);
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', () => { drag = null; });
+
+/* con ratón, el cursor dice qué hay debajo: mano abierta = agarrar y girar,
+   dedo = hay una pieza que se puede señalar */
+cv.addEventListener('pointermove', ev => {
+  if (drag || ev.pointerType !== 'mouse') return;
+  cv.style.cursor = pick(localPt(ev)) ? 'pointer' : (TURNABLE.has(view) ? 'grab' : 'default');
+});
 
 /* ---------- toques en el lienzo ---------- */
-function canvasTap(ev) {
-  if (dragCal) return;
-  const r = cv.getBoundingClientRect();
-  const p = ev.changedTouches ? ev.changedTouches[0] : ev;
-  const x = p.clientX - r.left, y = p.clientY - r.top;
-  let best = null, bd = 1e9;
-  for (const h of hits) { const d = Math.hypot(h.x - x, h.y - y); if (d < h.r && d < bd) { bd = d; best = h.id; } }
-  select(best);
+function pick(p) {
+  let best = null, bp = -1, bd = 1e9;
+  for (const h of hits) {
+    const c = Math.hypot(h.x - p.x, h.y - p.y);
+    const d = h.ring !== undefined ? Math.abs(c - h.ring) : c;
+    if (d >= h.r) continue;
+    const pr = h.pri || 0;
+    if (pr > bp || (pr === bp && d < bd)) { bp = pr; bd = d; best = h.id; }
+  }
+  return best;
 }
-cv.addEventListener('click', canvasTap);
+function canvasTap(ev) { select(pick(localPt(ev))); }
 
 /* ---------- pestañas ---------- */
 const GROUPS = {
@@ -553,10 +662,10 @@ const GROUPS = {
 const GROUP_OF = { front: 'maquina', back: 'maquina', gears: 'dentro', corte: 'dentro',
   letras: 'evidencia', frag: 'evidencia' };
 const VIEWNOTE = {
-  front: 'El cosmos, tal como lo entendía un griego del siglo II a.C. Arrastra el anillo exterior del calendario; toca cualquier pieza para saber qué es y cuánta evidencia hay detrás.',
-  back:  'Los ciclos largos: 235 meses en una espiral de cinco vueltas, 223 en otra de cuatro. Los puntos son posibilidades de eclipse.',
-  gears: 'Los 30 engranes que existen, a escala real. Toca una salida en la lectura y se enciende su tren completo.',
-  corte: 'La tercera dimensión. Gira la manivela: el dorso se queda quieto y el frente cruza el plano de corte.',
+  front: 'Arrastra sobre el dial para girar la máquina, o sobre el anillo exterior para mover el calendario. Toca cualquier pieza para saber qué es y cuánta evidencia hay detrás.',
+  back:  'Arrastra para girar. Los ciclos largos: 235 meses en una espiral de cinco vueltas, 223 en otra de cuatro; los puntos son posibilidades de eclipse.',
+  gears: 'Arrastra para girar. A escala real: toca la corona dentada o la letra de cualquier rueda —las coaxiales se distinguen por su radio— y se enciende su tren completo.',
+  corte: 'Arrastra para girar: el dorso se queda quieto y el frente cruza el plano de corte. La caja mide 100 mm de fondo y el engranaje ocupa 41.',
   letras: 'El griego, copiado literalmente de la edición de 2016. Toca un bloque del mapa para leer su texto.',
   frag:  'Todo lo que queda: 82 trozos, 731 cm² y 895 gramos de bronce. Toca uno.'
 };
@@ -616,16 +725,26 @@ const mC = document.getElementById('mCrank'), mD = document.getElementById('mDat
 mC.onclick = () => { mC.setAttribute('aria-pressed', 'true'); mD.setAttribute('aria-pressed', 'false');
   document.getElementById('panelCrank').style.display = ''; document.getElementById('panelDate').classList.remove('on'); };
 mD.onclick = () => { mD.setAttribute('aria-pressed', 'true'); mC.setAttribute('aria-pressed', 'false');
-  document.getElementById('panelCrank').style.display = 'none'; document.getElementById('panelDate').classList.add('on'); playing = false; document.getElementById('play').setAttribute('aria-pressed', 'false'); document.getElementById('play').textContent = '▶ girar'; };
+  document.getElementById('panelCrank').style.display = 'none'; document.getElementById('panelDate').classList.add('on'); playing = false; stopPlay(); };
 
 document.querySelectorAll('.steps button').forEach(b =>
   b.onclick = () => { T += (+b.dataset.d) / M.yearDays; render(); });
 
 let playing = false, raf = null, lastTS = 0;
+function stopPlay() {
+  if (!playing) return;
+  playing = false; cancelAnimationFrame(raf);
+  const b = document.getElementById('play');
+  b.setAttribute('aria-pressed', 'false'); b.textContent = '▶';
+  document.getElementById('playrow').classList.remove('on');
+}
 const playBtn = document.getElementById('play'), speed = document.getElementById('speed');
 playBtn.onclick = () => {
   playing = !playing; playBtn.setAttribute('aria-pressed', playing);
-  playBtn.textContent = playing ? '⏸ parar' : '▶ girar';
+  playBtn.textContent = playing ? '⏸' : '▶';
+  /* el mando de velocidad solo existe mientras algo se mueve: así la barra
+     flotante es más baja y tapa menos máquina */
+  document.getElementById('playrow').classList.toggle('on', playing);
   if (playing) { lastTS = performance.now(); raf = requestAnimationFrame(loop); }
   else cancelAnimationFrame(raf);
 };
@@ -638,7 +757,7 @@ function loop(ts) {
 
 function goDate(y, m, d) {
   T = (toJD(y, m, d) - JD0) / M.yearDays;
-  playing = false; playBtn.setAttribute('aria-pressed', 'false'); playBtn.textContent = '▶ girar';
+  playing = false; playBtn.setAttribute('aria-pressed', 'false'); playBtn.textContent = '▶';
   render();
 }
 document.getElementById('qgo').onclick = () => {
