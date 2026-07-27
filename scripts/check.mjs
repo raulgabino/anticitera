@@ -21,6 +21,7 @@ for (const vp of [{ width: 320, height: 700 }, { width: 390, height: 900 }, { wi
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.goto(url);
   await page.waitForTimeout(500);
+  await page.evaluate(() => closeIntro());
 
   for (const mk of MODELS) {
     await page.evaluate(m => setModel(m), mk);

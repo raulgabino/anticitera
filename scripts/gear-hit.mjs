@@ -13,6 +13,7 @@ for (const [vw, vh, tag] of [[390, 844, 'teléfono 390px'], [900, 1000, 'escrito
   pg.on('pageerror', e => errs.push(String(e)));
   await pg.goto(FILE);
   await pg.waitForTimeout(400);
+  await pg.evaluate(() => closeIntro());
   await pg.evaluate(() => { setView('gears'); select(null); });
 
   const cv = await pg.$('#cv');

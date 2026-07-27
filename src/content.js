@@ -312,7 +312,36 @@ entre 2.3 y 3.0 mm, y la más pequeña, la de los diales, <b>apenas pasa de 1 mm
 <i>Almagest</i> 7.1 (2016), pp. 4–67. Edición completa:
 <a href="https://archive.nyu.edu/bitstream/2451/71597/2/IAM%20Almagest%207.1%202016%20Complete.pdf">archive.nyu.edu</a>.</div>`;
 
+/* ---------- portada ----------
+   La imagen de la portada no es una captura guardada: es el lienzo de la propia
+   máquina copiado tal como acaba de dibujarse. Siempre enseña la versión actual. */
+function snapIntro() {
+  const src = document.getElementById('cv'), dst = document.getElementById('introShot');
+  if (!src || !dst || !src.width || !src.height) return;
+  dst.width = src.width; dst.height = src.height;
+  dst.getContext('2d').drawImage(src, 0, 0);
+}
+function closeIntro() {
+  const el = document.getElementById('intro');
+  if (!el || el.classList.contains('gone')) return;
+  el.classList.add('gone');
+  document.body.classList.remove('locked');
+  setTimeout(() => { el.style.display = 'none'; }, 240);
+}
+function openIntro() {
+  const el = document.getElementById('intro');
+  if (!el) return;
+  el.style.display = '';
+  document.body.classList.add('locked');
+  requestAnimationFrame(() => { el.classList.remove('gone'); el.scrollTop = 0; });
+  snapIntro();
+}
+document.getElementById('introGo').onclick = closeIntro;
+document.getElementById('introBack').onclick = openIntro;
+addEventListener('keydown', e => { if (e.key === 'Escape') closeIntro(); });
+
 /* ---------- arranque ---------- */
 resize();
 setModel('f2021');
 setView('front');
+snapIntro();

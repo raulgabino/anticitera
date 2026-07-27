@@ -3,6 +3,7 @@ const b = await chromium.launch();
 const p = await b.newPage({ viewport:{width:390,height:900} });
 const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{if(m.type()==='error')errs.push(m.text());});
 await p.goto('file://' + process.cwd() + '/index.html'); await p.waitForTimeout(600);
+await p.evaluate(() => closeIntro());
 
 const T0 = await p.evaluate(()=>T);
 // arrastre circular sobre el centro del dial

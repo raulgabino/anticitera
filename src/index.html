@@ -205,6 +205,29 @@ table.t{width:100%;border-collapse:collapse;font-size:11.5px;margin:8px 0}
 table.t th,table.t td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:top}
 table.t th{color:var(--ink3);font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase}
 table.t td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* portada */
+#intro{position:fixed;inset:0;z-index:60;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--bg);transition:opacity .22s ease}
+#intro.gone{opacity:0;pointer-events:none}
+body.locked{overflow:hidden}
+.introbox{max-width:600px;margin:0 auto;padding:34px 18px 40px}
+.introbox h1{font:700 clamp(21px,5.4vw,30px)/1.15 inherit;color:var(--ink);margin:0;letter-spacing:.005em}
+.introbox .kicker{font:600 10.5px/1 inherit;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--bronze);margin:0 0 11px}
+.introbox .lede{font-size:15px;line-height:1.62;color:var(--ink2);margin:15px 0 0}
+.introbox figure{margin:22px 0 0}
+#introShot{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:14px;
+  background:var(--surface)}
+.introbox .stats{margin:9px 0 0;font-size:11.5px;color:var(--ink3);text-align:center;letter-spacing:.01em}
+.introbox section{margin:20px 0 0;font-size:13.5px;line-height:1.6;color:var(--ink2)}
+.introbox section b{color:var(--ink);font-weight:600}
+.introbox .go{display:block;width:100%;margin:26px 0 0;padding:16px;border-radius:12px;
+  border:1px solid #4a4238;background:#2b2721;color:var(--bronze-hi);
+  font:700 15px/1 inherit;font-family:inherit;letter-spacing:.02em;cursor:pointer}
+.introbox .go:hover{background:#332e26}
+.introbox .foot{margin:16px 0 0;font-size:11px;color:var(--ink3);text-align:center;line-height:1.6}
+.introlink{background:none;border:0;padding:0;color:var(--ink3);font:inherit;font-size:11px;
+  text-decoration:underline;cursor:pointer;font-family:inherit}
 footer{margin-top:22px;font-size:11px;color:var(--ink3);line-height:1.6;text-align:center}
 footer .sig{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink2);font-size:12px}
 footer .sig b{color:var(--ink);font-weight:600}
@@ -215,7 +238,41 @@ footer .wa:hover{border-color:var(--patina);background:var(--surface2)}
 footer .wa svg{width:14px;height:14px;fill:currentColor;flex:none}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="introbox">
+    <p class="kicker">Reconstrucción interactiva</p>
+    <h1 id="introTitle">El mecanismo de Anticitera</h1>
+    <p class="lede">Un naufragio frente a la isla de Anticitera guardó dos mil años una caja de madera
+    y bronce. De ella quedan 82 trozos y 895 gramos de metal, y dentro se distinguen 30 engranes que
+    todavía se pueden medir. Esta página los pone a girar otra vez.</p>
+
+    <figure>
+      <canvas id="introShot" width="720" height="820" aria-label="La máquina tal como está ahora, en la fecha de calibración"></canvas>
+      <p class="stats">6 vistas · 3 reconstrucciones rivales · 34 ruedas · 82 fragmentos</p>
+    </figure>
+
+    <section><b>Qué hace.</b> Se le da vuelta a la manivela y avanza el cielo entero: el Sol verdadero,
+    la Luna con su fase y su velocidad variable, los cinco planetas con sus lazos retrógrados, el
+    calendario egipcio, los meses corintios, las posibilidades de eclipse y el año de los Juegos.</section>
+
+    <section><b>Cómo está hecho.</b> El estado completo de la máquina cabe en un solo número, las vueltas
+    de la rueda motriz. Cada aguja sale de ahí por razones de dientes medidas en las tomografías de rayos X.
+    Los errores que aparecen en pantalla son los del aparato.</section>
+
+    <section><b>De dónde partió.</b> Todo arrancó de una premisa: se trata de un aparato mecánico, y eso
+    acota lo que puede llegar a hacer. De ahí salió la regla del proyecto, que todo lo que se mueve se
+    mueva porque un tren de engranes reales lo obliga. Y con ella la lectura que orienta lo demás, que
+    los aros dentados señalan y que por eso la máquina existe para dar respuestas, cada una de ellas una
+    posición en el cielo. La interpretación quedó libre dentro de lo que era físicamente posible
+    entonces.</section>
+
+    <button class="go" id="introGo">Girar la manivela</button>
+    <p class="foot">Se maneja arrastrando sobre la propia máquina, que es como se usaba el original.</p>
+  </div>
+</div>
+
 <div class="wrap">
 
 <header>
@@ -346,6 +403,7 @@ footer .wa svg{width:14px;height:14px;fill:currentColor;flex:none}
   Reconstrucción basada en Freeth et al. 2021 (<i>Scientific Reports</i> 11:5821), Freeth &amp; Jones 2012
   (<i>ISAW Papers</i> 4) y Freeth et al. 2006/2008 (<i>Nature</i>).<br>
   Dimensiones tomadas de las tomografías de rayos X. Los errores son los de la máquina, no los del navegador.
+  <div style="margin-top:9px"><button class="introlink" id="introBack">Ver la portada otra vez</button></div>
   <div class="sig">
     Reconstrucción y desarrollo: <b>Raúl Gabino Quilantán</b><br>
     <a class="wa" href="https://wa.me/528341309459" target="_blank" rel="noopener"

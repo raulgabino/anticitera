@@ -92,6 +92,7 @@ Las pruebas son tres y ninguna necesita servidor:
 | `scripts/check.mjs` | 3 anchos × 3 modelos × 6 vistas × 82 fragmentos, sin un solo error de consola, más los invariantes del mecanismo: 51 glifos, 38 lunares, 27 solares, 254/19, 235/19, 940/4237 |
 | `scripts/jitter.mjs` | Que la caja **no salte**. Recorre 400 fechas midiendo la altura de cada celda: el texto cambia de largo con la fecha, así que si no está reservada la altura, la página entera se mueve mientras la manivela corre |
 | `scripts/drag-test.mjs` | Que arrastrar gire exactamente 78.6 días por vuelta, que el anillo del calendario gire sin mover la máquina, que un toque siga seleccionando y que el giro automático se detenga al agarrar |
+| `scripts/intro.mjs` | Que la portada aparezca, se quite con el botón o con Escape, vuelva desde el pie, y que su imagen traiga píxeles de la máquina de verdad, porque es el lienzo copiado y no una captura guardada |
 | `scripts/gear-hit.mjs` | Que **las 34 ruedas se puedan señalar**. Hace 68 clics reales —la letra y la corona de cada una— y exige que cada uno seleccione su propia rueda, no la vecina ni la coaxial; luego barre el lienzo entero comprobando que ninguna quede sin un solo píxel suyo |
 
 `index.html` está versionado a propósito: es el entregable, y así el repo se puede clonar y abrir

@@ -6,6 +6,7 @@ for (const vp of [{width:320,height:700},{width:390,height:900},{width:1280,heig
   const p = await b.newPage({ viewport: vp });
   await p.goto('file://' + process.cwd() + '/index.html');
   await p.waitForTimeout(500);
+  await p.evaluate(() => closeIntro());
   const r = await p.evaluate(() => {
     const ids = ['#dateval','.datebar','#grid','.readout','.controls','.info','.modelnote','.viewnote'];
     const seen = {}; ids.forEach(i => seen[i] = new Set());
