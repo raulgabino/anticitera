@@ -1,0 +1,16 @@
+{
+  "name": "mecanismo-de-anticitera",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reconstrucción interactiva del mecanismo de Anticitera, derivada de las razones de dientes reales.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && npx --yes serve . -l 5173",
+    "check": "node build.mjs && node scripts/check.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
